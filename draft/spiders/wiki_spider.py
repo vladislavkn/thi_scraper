@@ -1,40 +1,69 @@
 import scrapy
-import spacy
-from scrapy.linkextractors import LinkExtractor
-
-nlp = spacy.load("en_core_web_sm")
-
-start_url = "http://cai.rz.fh-ingolstadt.de/mediawiki/index.php/Computer_Science_and_Artificial_Intelligence"
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from collections import Counter
 
 
 class WikiSpider(scrapy.Spider):
-    name = "wiki"
+    name = "wiki-spider"
     start_urls = [
-        "http://cai.rz.fh-ingolstadt.de/mediawiki/index.php/Computer_Science_and_Artificial_Intelligence"
+        "http://cai.rz.fh-ingolstadt.de/mediawiki/index.php/Computer_Science_and_Artificial_Intelligence",
     ]
     custom_settings = {"DEPTH_LIMIT": 10}
 
     def __init__(self, *args, **kwargs):
-        super(WikiSpider, self).__init__(*args, **kwargs)
-        self.visited_urls = set()
+        self.makeEntries = kwargs["makeEntries"]
+        super.__init__(*args, **kwargs)
+        self.scrapedLinks = []
 
     def parse(self, response):
-        self.visited_urls.add(response.url)
+        texts = response.css("p::text").getall()
+        entries = self.makeEntries(texts)
+        for entry in entries:
+            yield entry
+        self.traverseNextLinks(response)
 
-        page_text = response.css("p::text").getall()
-        page_text = " ".join(page_text)
+    def traverseNextLinks(self, response):
+        for link in response.xpath(".//a/@href"):
+            newUrl = str(link.get())
+            if self.testLinkInteresting(newUrl):
+                newUrl = self.makeLinkComplete(newUrl)
 
-        keywords = self.extract_keywords(page_text)
+                if newUrl not in self.scrapedLinks:
+                    self.scrapedLinks.append(newUrl)
+                    yield response.follow(newUrl, self.parse)
 
-        key_value_pair = {"tags": keywords, "body": page_text}
-        yield {response.url: key_value_pair}
+    def makeLinkComplete(self, url):
+        if "http://cai.rz.fh-ingolstadt.de/" in url:
+            return url
+        else:
+            return "http://cai.rz.fh-ingolstadt.de/" + url
 
-        for link in LinkExtractor(allow=("/mediawiki/")).extract_links(response):
-            if link.url not in self.visited_urls:
-                next_page = response.urljoin(link.url)
-                yield response.follow(next_page, self.parse)
+    def testLinkInteresting(self, url):
+        if "/mediawiki/index.php/" not in url:
+            return False
+        if "/Special:" in url:
+            return False
+        if "/File:" in url:
+            return False
+        return True
 
-    def extract_keywords(self, text):
-        doc = nlp(text)
-        keywords = [token.text for token in doc if token.is_alpha and not token.is_stop]
+    def makeEntries(self, texts):
+        entries = []
+        for text in texts:
+            keywords = self.extractKeywords(text)
+            entries.append({"tags": keywords, "body": text})
+        return entries
+
+    @staticmethod
+    def extractKeywords(self, text):
+        words = word_tokenize(text)
+        words = [word.lower() for word in words if word.isalpha()]
+
+        stop_words = set(stopwords.words("english"))
+        words = [word for word in words if word not in stop_words]
+
+        freq_dist = Counter(words)
+        keywords = [word for word, freq in freq_dist.most_common(10)]
+
         return keywords

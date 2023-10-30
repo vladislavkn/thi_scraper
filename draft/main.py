@@ -1,6 +1,9 @@
 import requests
+import logging
 from scrapy.crawler import CrawlerProcess
-from spiders.wiki_spider import WikiSpider
+from thi_scraper.draft.spiders.spider import WikiSpider
+
+logging.getLogger("scrapy").propagate = False
 
 
 def run_spider_and_collect_results():
@@ -9,6 +12,7 @@ def run_spider_and_collect_results():
             "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.1234.567 Safari/537.36",
             "FEED_FORMAT": "json",
             "FEED_URI": "output.json",
+            "LOG_ENABLED": False,
         }
     )
 
@@ -25,7 +29,7 @@ def send_data(data):
     payload = {"results": data}
     headers = {"Content-Type": "application/json"}
 
-    response = requests.post("localhost:5000", json=payload, headers=headers)
+    response = requests.post("http://localhost:5000", json=payload, headers=headers)
 
     return response.status_code
 
