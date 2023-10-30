@@ -1,7 +1,7 @@
 import requests
 import logging
 from scrapy.crawler import CrawlerProcess
-from thi_scraper.draft.spiders.spider import WikiSpider
+from spiders.wiki_spider import WikiSpider
 
 logging.getLogger("scrapy").propagate = False
 

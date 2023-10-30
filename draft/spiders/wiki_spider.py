@@ -12,8 +12,7 @@ class WikiSpider(scrapy.Spider):
     custom_settings = {"DEPTH_LIMIT": 10}
 
     def __init__(self, *args, **kwargs):
-        self.makeEntries = kwargs["makeEntries"]
-        super.__init__(*args, **kwargs)
+        super(WikiSpider, self).__init__(*args, **kwargs)
         self.scrapedLinks = []
 
     def parse(self, response):
