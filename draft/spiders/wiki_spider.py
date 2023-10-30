@@ -24,9 +24,6 @@ class WikiSpider(scrapy.Spider):
         entries = self.makeEntries(texts)
         for entry in entries:
             yield entry
-        self.traverseNextLinks(response)
-
-    def traverseNextLinks(self, response):
         for link in response.xpath(".//a/@href"):
             newUrl = str(link.get())
             if self.testLinkInteresting(newUrl):
@@ -54,8 +51,9 @@ class WikiSpider(scrapy.Spider):
     def makeEntries(self, texts):
         entries = []
         for text in texts:
-            keywords = self.extractKeywords(text)
-            entries.append({"tags": keywords, "body": text})
+            if len(text.split(" ")) > 5:
+                keywords = self.extractKeywords(text)
+                entries.append({"tags": keywords, "body": text})
         return entries
 
     def extractKeywords(self, text):
