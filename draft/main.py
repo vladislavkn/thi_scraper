@@ -39,7 +39,10 @@ if __name__ == "__main__":
     spider_results = run_spider_and_collect_results()
 
     print("Data collected. Sending data...")
-    status_code = send_data(spider_results)
+    try:
+        status_code = send_data(spider_results)
+    except Exception:
+        print("HTTP-request failed due to internal error")
 
     if status_code == 200:
         print("Data sent successful")
