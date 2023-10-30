@@ -1,7 +1,11 @@
 import scrapy
+import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import Counter
+
+nltk.download("stopwords")
+nltk.download("punkt")
 
 
 class WikiSpider(scrapy.Spider):
@@ -54,7 +58,6 @@ class WikiSpider(scrapy.Spider):
             entries.append({"tags": keywords, "body": text})
         return entries
 
-    @staticmethod
     def extractKeywords(self, text):
         words = word_tokenize(text)
         words = [word.lower() for word in words if word.isalpha()]

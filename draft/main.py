@@ -2,16 +2,21 @@ import requests
 import logging
 from scrapy.crawler import CrawlerProcess
 from spiders.wiki_spider import WikiSpider
+import os
 
 logging.getLogger("scrapy").propagate = False
 
 
 def run_spider_and_collect_results():
+    FILENAME = "output.json"
+    if os.path.exists(FILENAME):
+        os.remove(FILENAME)
+
     process = CrawlerProcess(
         settings={
             "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.1234.567 Safari/537.36",
             "FEED_FORMAT": "json",
-            "FEED_URI": "output.json",
+            "FEED_URI": FILENAME,
             "LOG_ENABLED": False,
         }
     )
@@ -20,7 +25,7 @@ def run_spider_and_collect_results():
 
     process.start()
 
-    with open("output.json", "r") as f:
+    with open(FILENAME, "r") as f:
         results = f.read()
     return results
 
