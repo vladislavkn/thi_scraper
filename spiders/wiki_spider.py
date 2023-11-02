@@ -1,11 +1,6 @@
 import scrapy
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from collections import Counter
-
-nltk.download("stopwords")
-nltk.download("punkt")
+from utils.annotate_text import annotate_text
+import re
 
 
 class WikiSpider(scrapy.Spider):
@@ -14,7 +9,7 @@ class WikiSpider(scrapy.Spider):
         "http://cai.rz.fh-ingolstadt.de/mediawiki/index.php/Computer_Science_and_Artificial_Intelligence",
     ]
     custom_settings = {"DEPTH_LIMIT": 10}
-    blacklisted_parts = ["/Special:", "/File:", "Category:Student"]
+    blacklisted_parts = ["/Special:", "/File:", "Category:"]
 
     def __init__(self, *args, **kwargs):
         super(WikiSpider, self).__init__(*args, **kwargs)
@@ -22,7 +17,11 @@ class WikiSpider(scrapy.Spider):
 
     def parse(self, response):
         texts = response.css("p::text").getall()
-        entries = self.makeEntries(texts)
+        sentences = []
+        for text in texts:
+            sentences += list(re.split("[.?!]", text))
+
+        entries = self.makeEntries(sentences)
         for entry in entries:
             yield entry
 
@@ -52,23 +51,7 @@ class WikiSpider(scrapy.Spider):
     def makeEntries(self, texts):
         entries = []
         for text in texts:
-            if len(text.split(" ")) > 5:
-                keywords = self.extractKeywords(text)
-                if len(keywords) > 0:
-                    entries.append({"tags": keywords, "answer": text})
+            tags = annotate_text(text)
+            if tags:
+                entries.append({"tags": tags, "answer": text})
         return entries
-
-    def extractKeywords(self, text):
-        words = word_tokenize(text)
-        words = [word.lower() for word in words if word.isalpha()]
-        if len(words) < 10:
-            return []
-        keywords_count = max(1, min(10, len(words) // 5))
-
-        stop_words = set(stopwords.words("english"))
-        words = [word for word in words if word not in stop_words]
-
-        freq_dist = Counter(words)
-        keywords = [word for word, freq in freq_dist.most_common(keywords_count)]
-
-        return keywords
