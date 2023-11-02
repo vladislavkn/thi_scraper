@@ -14,6 +14,7 @@ class WikiSpider(scrapy.Spider):
         "http://cai.rz.fh-ingolstadt.de/mediawiki/index.php/Computer_Science_and_Artificial_Intelligence",
     ]
     custom_settings = {"DEPTH_LIMIT": 10}
+    blacklisted_parts = ["/Special:", "/File:", "Category:Student"]
 
     def __init__(self, *args, **kwargs):
         super(WikiSpider, self).__init__(*args, **kwargs)
@@ -24,6 +25,7 @@ class WikiSpider(scrapy.Spider):
         entries = self.makeEntries(texts)
         for entry in entries:
             yield entry
+
         for link in response.xpath(".//a/@href"):
             newUrl = str(link.get())
             if self.testLinkInteresting(newUrl):
@@ -33,27 +35,26 @@ class WikiSpider(scrapy.Spider):
                     self.scrapedLinks.append(newUrl)
                     yield response.follow(newUrl, self.parse)
 
+    def testLinkInteresting(self, url):
+        if "/mediawiki/index.php/" not in url:
+            return False
+        for blacklisted_part in WikiSpider.blacklisted_parts:
+            if blacklisted_part in url:
+                return False
+        return True
+
     def makeLinkComplete(self, url):
         if "http://cai.rz.fh-ingolstadt.de/" in url:
             return url
         else:
             return "http://cai.rz.fh-ingolstadt.de/" + url
 
-    def testLinkInteresting(self, url):
-        if "/mediawiki/index.php/" not in url:
-            return False
-        if "/Special:" in url:
-            return False
-        if "/File:" in url:
-            return False
-        return True
-
     def makeEntries(self, texts):
         entries = []
         for text in texts:
             if len(text.split(" ")) > 5:
                 keywords = self.extractKeywords(text)
-                entries.append({"tags": keywords, "body": text})
+                entries.append({"tags": keywords, "answer": text})
         return entries
 
     def extractKeywords(self, text):
