@@ -54,17 +54,21 @@ class WikiSpider(scrapy.Spider):
         for text in texts:
             if len(text.split(" ")) > 5:
                 keywords = self.extractKeywords(text)
-                entries.append({"tags": keywords, "answer": text})
+                if len(keywords) > 0:
+                    entries.append({"tags": keywords, "answer": text})
         return entries
 
     def extractKeywords(self, text):
         words = word_tokenize(text)
         words = [word.lower() for word in words if word.isalpha()]
+        if len(words) < 10:
+            return []
+        keywords_count = max(1, min(10, len(words) // 5))
 
         stop_words = set(stopwords.words("english"))
         words = [word for word in words if word not in stop_words]
 
         freq_dist = Counter(words)
-        keywords = [word for word, freq in freq_dist.most_common(10)]
+        keywords = [word for word, freq in freq_dist.most_common(keywords_count)]
 
         return keywords
