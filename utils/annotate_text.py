@@ -15,7 +15,7 @@ def annotate_text(text):
         return None
 
     context = set(
-        filter(lambda w: w is not None, [get_subject(doc), *get_objects(doc)])
+        [w.lower() for w in [get_subject(doc), *get_objects(doc)] if w is not None]
     )
 
     if len(context) == 0:
@@ -55,13 +55,7 @@ def get_subject(doc):
     root = None
     for token in doc:
         if "ROOT" in token.dep_:
-            root = token
-            break
-
-    if root is not None:
-        for child in root.children:
-            if "subj" in child.dep_:
-                return child.text
+            return token.text
 
     return None
 
